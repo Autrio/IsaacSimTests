@@ -94,8 +94,8 @@ class TableTopSceneCfg(InteractiveSceneCfg):
     robot1 = FRANKA_PANDA_HIGH_PD_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot1")
     robot2 = FRANKA_PANDA_HIGH_PD_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot2")
 
-    robot1.init_state.pos = (0.0, 0.6, 0.0)
-    robot2.init_state.pos = (0.0, -0.6, 0.0)
+    robot1.init_state.pos = (0.0, 0.5, 0.0)
+    robot2.init_state.pos = (0.0, -0.5, 0.0)
 
 def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
 
@@ -118,12 +118,14 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
     ee_goals1 = [
         [0.5, 0.5, 0.5, 0.0, 1.0, 0.0, 0.0],
         [0.5000, 0.5000, 0.2500, 0.7071, 0.7071, 0.0000, 0.0000],
-        [0.5, 0.21, 0.25, 0.707, 0.707, 0.0, 0.0],    
+        [0.5, 0.23, 0.2, 0.707, 0.707, 0.0, 0.0],
+        [0.5, 0.23, 0.35, 0.707, 0.707, 0.0, 0.0]    
     ]
     ee_goals2 = [
         [0.5, -0.7, 0.6, 0.707, 0.707, 0.0, 0.0],
-        [0.5, -0.6, 0.7, 1, 0, 0, 0],
-        [0.5, -0.5, 0.5, 0.0, 1.0, 0.0, 0.0],
+        [0.5000, -0.5000,  0.2500,  0.7044, -0.7044,  0.0616,  0.0616],
+        [0.5000, -0.23,  0.2,  0.7044, -0.7044,  0.0616,  0.0616],
+        [0.5000, -0.23, 0.3500,  0.7044, -0.7044,  0.0616,  0.0616]
     ]
     ee_goals1 = torch.tensor(ee_goals1, device=sim.device)
     ee_goals2 = torch.tensor(ee_goals2, device=sim.device)
@@ -185,6 +187,7 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
     rot_deg = [0,0,0]
     grasp = False
     running = True
+    RB_1 = True
     while simulation_app.is_running() and running:
         event = pygame.event.poll()
         if event is not pygame.NOEVENT:
@@ -203,20 +206,22 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
                     robot2.reset()
 
                 if event.key == pygame.K_c:
-                    RB_ID = 2
+                    RB_1 = not RB_1
+
+                delta_pos = torch.zeros_like(ik_commands1[:, 0:3], device=sim.device)
 
                 if event.key == pygame.K_w:
-                    ik_commands1[:,0] -= 0.01
+                    delta_pos[:,0] -= 0.01
                 if event.key == pygame.K_s:
-                    ik_commands1[:,0] += 0.01
+                    delta_pos[:,0] += 0.01
                 if event.key == pygame.K_a:
-                    ik_commands1[:,1] -= 0.01
+                    delta_pos[:,1] -= 0.01
                 if event.key == pygame.K_d:
-                    ik_commands1[:,1] += 0.01
+                    delta_pos[:,1] += 0.01
                 if event.key == pygame.K_e:
-                    ik_commands1[:,2] -= 0.01
+                    delta_pos[:,2] -= 0.01
                 if event.key == pygame.K_q:
-                    ik_commands1[:,2] += 0.01
+                    delta_pos[:,2] += 0.01
 
                 if event.key == pygame.K_UP:
                     rot_deg[0] += 10
@@ -232,7 +237,13 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
                     rot_deg[2] -= 10
                 
                 quat = R.from_euler('xyz', rot_deg, degrees=True).as_quat()
-                ik_commands1[:,3:7] = torch.tensor(quat)
+                
+                if RB_1:
+                    ik_commands1[:,3:7] = torch.tensor(quat)
+                    ik_commands1[:,0:3] += delta_pos
+                else:
+                    ik_commands2[:,3:7] = torch.tensor(quat)
+                    ik_commands2[:,0:3] += delta_pos
 
                 if event.key == pygame.K_ESCAPE:
                     exit(0)
@@ -252,6 +263,12 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
                 if event.key == pygame.K_2:
                     ik_commands1[:] = ee_goals1[2]
                     ik_commands2[:] = ee_goals2[2]
+                    quat = ik_commands1[0,3:7].cpu().numpy()
+                    rot_deg = R.from_quat(quat).as_euler('xyz', degrees=True)
+
+                if event.key == pygame.K_3:
+                    ik_commands1[:] = ee_goals1[3]
+                    ik_commands2[:] = ee_goals2[3]
                     quat = ik_commands1[0,3:7].cpu().numpy()
                     rot_deg = R.from_quat(quat).as_euler('xyz', degrees=True)
 
@@ -280,7 +297,7 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
         jacobian1 = robot1.root_physx_view.get_jacobians()[:, ee_jacobi_idx1, :, robot1_entity_cfg.joint_ids]
         ee_pose_w1 = robot1.data.body_state_w[:, robot1_entity_cfg.body_ids[0], 0:7]
         root_pose_w1 = robot1.data.root_state_w[:, 0:7]
-        root_pose_w1[:, 0:3] -= torch.tensor((0.0, 0.6, 0.0), device=sim.device)
+        root_pose_w1[:, 0:3] -= torch.tensor((0.0, 0.5, -0.01), device=sim.device)
         joint_pos1 = robot1.data.joint_pos[:, robot1_entity_cfg.joint_ids]
         ee_pos_b1, ee_quat_b1 = subtract_frame_transforms(
             root_pose_w1[:, 0:3], root_pose_w1[:, 3:7], ee_pose_w1[:, 0:3], ee_pose_w1[:, 3:7]
@@ -290,7 +307,7 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
         jacobian2 = robot2.root_physx_view.get_jacobians()[:, ee_jacobi_idx2, :, robot2_entity_cfg.joint_ids]
         ee_pose_w2 = robot2.data.body_state_w[:, robot2_entity_cfg.body_ids[0], 0:7]
         root_pose_w2 = robot2.data.root_state_w[:, 0:7]
-        root_pose_w2[:, 0:3] -= torch.tensor((0.0, -0.6, 0.0), device=sim.device)
+        root_pose_w2[:, 0:3] -= torch.tensor((0.0, -0.5, -0.01), device=sim.device)
         joint_pos2 = robot2.data.joint_pos[:, robot2_entity_cfg.joint_ids]
         ee_pos_b2, ee_quat_b2 = subtract_frame_transforms(
             root_pose_w2[:, 0:3], root_pose_w2[:, 3:7], ee_pose_w2[:, 0:3], ee_pose_w2[:, 3:7]
