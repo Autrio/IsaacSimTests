@@ -4,8 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
+from scipy.spatial.transform import Rotation as R
+from icecream import ic
+
 # Load the model and create a simulation
-model = mujoco.MjModel.from_xml_path('./models_dual/tray_viz.xml')
+model = mujoco.MjModel.from_xml_path('./tray_viz.xml')
 data = mujoco.MjData(model)
 viewer = mujoco.viewer.launch_passive(model, data)
 
@@ -19,13 +22,17 @@ Kd = -0.2
 # Lists to store error values for y and x directions
 errors_y = []
 errors_x = []
-time.sleep(2)
+# time.sleep(2)
 # Initialize previous errors for derivative calculation
 prev_error_y = 0.0
 prev_error_x = 0.0
 viewer.cam.distance = 3
 start_time = time.time()
-times = []
+times = []  
+
+
+
+
 while viewer.is_running():
     # Get the current position of the cylinder
     cylinder_pos = data.body("cylinder_body").xpos
@@ -50,8 +57,19 @@ while viewer.is_running():
     data.ctrl[0] = tray_angle_y
     data.ctrl[1] = tray_angle_x
 
+    quat = [data.body("collision_object").xquat[1], data.body("collision_object").xquat[2], data.body("collision_object").xquat[3], data.body("collision_object").xquat[0]]
+    rotation = np.linalg.inv(R.as_matrix(R.from_quat(quat)))
+    new_quat = R.from_quat(quat).as_matrix() @ R.from_euler('xyz', [0, 180, 0], degrees=True).as_matrix()
+    new_quat = R.from_matrix(new_quat).as_quat()
+    new_quat = [new_quat[3], new_quat[0], new_quat[1], new_quat[2]]
+    translation = data.body("collision_object").xpos +  np.array([model.geom(model.body("collision_object").geomadr).size[0], 0 , 0]) @ rotation
     # Step the simulation
+    data.mocap_pos[0] = translation
+    radial_dist = np.linalg.norm(data.body("collision_object").xpos - data.mocap_pos[0])
+    data.mocap_quat[0] = new_quat
     mujoco.mj_step(model, data)
+    
+    
 
     # Render the simulation
     viewer.sync()
@@ -63,12 +81,3 @@ while viewer.is_running():
     start_time = time.time()
 
 # Plot the error over time for y and x directions
-plt.figure()
-plt.plot(errors_y, label='Error Y')
-plt.plot(errors_x, label='Error X')
-plt.plot(times, label='Time')
-plt.xlabel('Time step')
-plt.ylabel('Error magnitude')
-plt.title('Error Convergence')
-plt.legend()
-plt.show()

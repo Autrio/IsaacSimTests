@@ -1,0 +1,39 @@
+Thu Jan 30 13:02:52 2025
+WARNING: Nan, Inf or huge value in QACC at DOF 0. The simulation is unstable. Time = 849.7420.
+
+Thu Jan 30 13:02:58 2025
+WARNING: Linesearch objective is not convex
+
+Thu Jan 30 13:02:58 2025
+WARNING: Linesearch objective is not convex
+
+Thu Jan 30 13:04:33 2025
+WARNING: Nan, Inf or huge value in QACC at DOF 0. The simulation is unstable. Time = 1902.9660.
+
+Thu Jan 30 13:07:12 2025
+WARNING: Nan, Inf or huge value in QACC at DOF 0. The simulation is unstable. Time = 51.0306.
+
+Thu Jan 30 13:07:37 2025
+WARNING: Nan, Inf or huge value in QACC at DOF 0. The simulation is unstable. Time = 1879.2420.
+
+Sun Feb  2 00:46:36 2025
+WARNING: Nan, Inf or huge value in QACC at DOF 6. The simulation is unstable. Time = 14.0520.
+
+Sun Feb  2 00:48:02 2025
+WARNING: Nan, Inf or huge value in QACC at DOF 0. The simulation is unstable. Time = 7.4860.
+
+Sun Feb  2 00:50:29 2025
+WARNING: Nan, Inf or huge value in QACC at DOF 0. The simulation is unstable. Time = 54.9420.
+
+Sun Feb  2 00:51:07 2025
+WARNING: Nan, Inf or huge value in QACC at DOF 1. The simulation is unstable. Time = 5.4280.
+
+Sun Feb  2 00:51:26 2025
+WARNING: Nan, Inf or huge value in QACC at DOF 5. The simulation is unstable. Time = 3.9180.
+
+Sun Feb  2 01:17:46 2025
+WARNING: Nan, Inf or huge value in QACC at DOF 0. The simulation is unstable. Time = 35.8960.
+
+Sun Feb  2 01:19:53 2025
+WARNING: Nan, Inf or huge value in QACC at DOF 0. The simulation is unstable. Time = 22.2240.
+
